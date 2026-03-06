@@ -4,7 +4,8 @@ docker_build(
     context='./frontend',
     dockerfile='./frontend/dockerfile',
     live_update=[
-        sync('./frontend/', '/usr/share/nginx/html/'),
+        sync('./frontend', '/opt/app'),
+        run('cd /opt/app && yarn install --immutable', trigger=['./frontend/package.json', './frontend/yarn.lock']),
     ],
 )
 

@@ -1,7 +1,22 @@
-FROM nginx:alpine
+FROM node:24-alpine3.20 AS base
 
-COPY index.html /usr/share/nginx/html/
+WORKDIR /opt/app
 
-EXPOSE 80
+RUN apk add --no-cache libc6-compat
 
+# Enable Corepack for Yarn 4.x
+RUN corepack enable
+# Proxy environment variable
+ARG http_proxy
+ARG https_proxy
+ENV http_proxy=${http_proxy}
+ENV https_proxy=${https_proxy}
 
+# Install dependencies based on the preferred package manager
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY .yarn ./.yarn
+RUN yarn install --immutable && yarn cache clean --all
+
+COPY . .
+
+CMD ["yarn", "dev"]
