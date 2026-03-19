@@ -34,6 +34,7 @@ generateHosts = false
 
 sudo nano /etc/hosts
 127.0.0.1 frontend.local
+127.0.0.1 keycloak.local
 
 # Cleanup of Docker images, containers and volumes
 docker system prune -a --volumes -f

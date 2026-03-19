@@ -1,0 +1,191 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: keycloak
+
+# ---
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: keycloak-db-secret
+#   namespace: keycloak
+# type: Opaque
+# data:
+#   POSTGRES_DB: a2V5Y2xvYWtfZGI=         # keycloak_db (base64)
+#   POSTGRES_USER: a2V5Y2xvYWs=           # keycloak (base64)
+#   POSTGRES_PASSWORD: cGFzc3dvcmQ=       # password (base64)
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: keycloak-db-pvc
+  namespace: keycloak
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak-db
+  namespace: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak-db
+  template:
+    metadata:
+      labels:
+        app: keycloak-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db-secret
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db-secret
+              key: POSTGRES_PASSWORD
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: keycloak-db-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-db
+  namespace: keycloak
+spec:
+  type: ClusterIP
+  selector:
+    app: keycloak-db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:24.0.1
+        args: ["start-dev"]
+        env:
+        - name: KEYCLOAK_ADMIN
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-admin-secret
+              key: KEYCLOAK_ADMIN
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-admin-secret
+              key: KEYCLOAK_ADMIN_PASSWORD
+        - name: KC_DB
+          value: postgres
+        - name: KC_DB_URL_HOST
+          value: keycloak-db
+        - name: KC_DB_URL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db-secret
+              key: POSTGRES_DB
+        - name: KC_DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db-secret
+              key: POSTGRES_USER
+        - name: KC_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db-secret
+              key: POSTGRES_PASSWORD
+        - name: KC_PROXY
+          value: edge
+        - name: KC_HOSTNAME
+          value: keycloak.local
+        - name: KC_HOSTNAME_PORT
+          value: "80"
+        - name: KC_HOSTNAME_STRICT
+          value: "false"
+        - name: KC_HOSTNAME_STRICT_HTTPS
+          value: "false"
+        ports:
+        - containerPort: 8080
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  type: ClusterIP
+  selector:
+    app: keycloak
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: keycloak
+#   namespace: keycloak
+#   annotations:
+#     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+#     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#     - host: keycloak.local
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: keycloak
+#                 port:
+#                   number: 8080

@@ -10,6 +10,7 @@ docker_build(
 )
 
 # Déployer le manifest Kubernetes
-k8s_yaml('atelier.yml')
-
+k8s_yaml('keycloak-admin-secret.yaml',allow_duplicates=True)
+k8s_yaml('keycloak-deployment.yaml',allow_duplicates=True)
+k8s_yaml('atelier.yml',allow_duplicates=True)
 
