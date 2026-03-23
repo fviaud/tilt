@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World</title>
+</head>
+<body>
+    <h1>Mes Posts</h1>
+   
+</body>
+<script>
+fetch('http://backend.local/posts')
+    .then(response => response.json())
+    .then(data => {
+        if (!Array.isArray(data)) {
+            throw new Error('Format de données inattendu');
+        }
+        const table = document.createElement('table');
+        table.style.borderCollapse = 'collapse';
+        table.style.marginTop = '2em';
+        // En-têtes dynamiques
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        const keys = data.length > 0 ? Object.keys(data[0]) : [];
+        keys.forEach(key => {
+            const th = document.createElement('th');
+            th.textContent = key;
+            th.style.border = '1px solid #ccc';
+            th.style.padding = '0.5em 1em';
+            th.style.background = '#f5f5f5';
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        // Lignes de données
+        const tbody = document.createElement('tbody');
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            keys.forEach(key => {
+                const td = document.createElement('td');
+                td.textContent = row[key];
+                td.style.border = '1px solid #ccc';
+                td.style.padding = '0.5em 1em';
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        document.body.appendChild(table);
+    })
+    .catch(error => {
+        const err = document.createElement('div');
+        err.style.color = 'red';
+        err.textContent = 'Erreur lors du chargement des posts: ' + error;
+        document.body.appendChild(err);
+    });
+</script>
+</html

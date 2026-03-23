@@ -9,6 +9,7 @@ docker_build(
 )
 
 # Déployer le manifest Kubernetes
-k8s_yaml('atelier.yml')
+k8s_yaml('frontend.yml')
+k8s_yaml('backend.yml')
 
 
