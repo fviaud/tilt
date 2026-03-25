@@ -1,8 +1,7 @@
 import { betterAuth } from "better-auth"
-import { nextCookies } from "better-auth/next-js"
 // import sqlite3 from 'better-sqlite3'
 // const db = new sqlite3('./sqlite.db')
-import { genericOAuth, jwt, keycloak } from "better-auth/plugins"
+import { genericOAuth, keycloak } from "better-auth/plugins"
 
 export const auth = betterAuth({
   //...other options
@@ -12,14 +11,20 @@ export const auth = betterAuth({
 
   // database: db,
 
-  trustedOrigins: ["http://localhost:3000", "https://frontend.local"],
-// security: {
-//     allowedOrigins: [
-//       "http://localhost:3000",
-//       "https://frontend.local",   // <-- ADD THIS
-//     ],
-//   },
-
+  trustedOrigins: [
+    "http://localhost:3000",
+    "http://frontend.local",
+    "https://frontend.local",
+    "http://keycloak.local",
+    "http://*.local",
+    "http://*.local",
+  ],
+  security: {
+    allowedOrigins: [
+      "http://frontend.local",
+      "https://frontend.local", // <-- ADD THIS
+    ],
+  },
 
   // account: {
   //   accountLinking: {
@@ -45,12 +50,14 @@ export const auth = betterAuth({
         keycloak({
           clientId: "kunai-frontend-tilt",
           clientSecret: "JvcHzWkGplMe9lBfQUvUuacAUwfuNf2S",
-          issuer: "http://keycloak.keycloak.svc.cluster.local:8080/realms/kunai",
-          scopes: ["profile email"],
+          issuer:
+            "http://keycloak.keycloak.svc.cluster.local:8080/realms/kunai",
+          // "http://keycloak.local/realms/kunai",
+          scopes: ["openid", "profile", "email", "offline_access"],
         }),
       ],
     }),
-    nextCookies(),
-    jwt(),
+    // nextCookies(),
+    // jwt(),
   ],
 })
